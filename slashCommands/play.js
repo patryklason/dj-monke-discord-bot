@@ -9,7 +9,7 @@ module.exports = {
         .addSubcommand((subcommand) => 
         subcommand
             .setName('url')
-            .setDescription('Plays a song from a url')
+            .setDescription('Szuka utworu po linku')
             .addStringOption((option) =>
                 option
                     .setName('url')
@@ -20,7 +20,7 @@ module.exports = {
         .addSubcommand((subcommand) =>
         subcommand
             .setName('playlist')
-            .setDescription('Plays a playlist from a url')
+            .setDescription('Szuka playlisty po linku')
             .addStringOption((option) =>
                 option
                     .setName('url')
@@ -31,7 +31,7 @@ module.exports = {
         .addSubcommand((subcommand) =>
         subcommand
             .setName('search')
-            .setDescription('Searches a song')
+            .setDescription('Szuka piosenki po wpisanej frazie')
             .addStringOption((option) =>
             option
                 .setName('keywords')
@@ -41,8 +41,16 @@ module.exports = {
         ),
     run: async ({client, interaction}) => {
 
-        if (!interaction.member.voice.channel)
-            return interaction.editReply('❌ | you need to join the voice channel to use this command.');
+        let errorEmbed = new EmbedBuilder();
+
+        if (!interaction.member.voice.channel) {
+            errorEmbed
+                .setTitle('❌  Błąd')
+                .setDescription('Aby użyć tej komendy, dołącz na kanał głosowy.')
+                .setColor(0xe33e32);
+            return interaction.editReply({embeds: [errorEmbed,]});
+        }
+
 
         const queue = await client.player.createQueue(interaction.guild);
         global.QUEUE_GUILD = queue.guild;
@@ -58,18 +66,23 @@ module.exports = {
                 searchEngine: QueryType.YOUTUBE_VIDEO,
             });
 
-            if (result.tracks.length === 0)
-                return interaction.editReply('❌ | no results');
+            if (result.tracks.length === 0) {
+                errorEmbed
+                    .setTitle('❌  Brak wyników')
+                    .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
+                    .setColor(0xe33e32);
+                return interaction.editReply({embeds: [errorEmbed,]});
+            }
 
             const song = result.tracks[0];
             await queue.addTrack(song);
 
             embed
                 .setColor(0xf6ff00)
-                .setTitle('🎶 | song added to queue')
+                .setTitle('🎶  Dodano do kolejki')
                 .setDescription(`**[${song.title}]**`)
                 .setThumbnail(song.thumbnail)
-                .setFooter({text: `Duration: ${song.duration}`});
+                .setFooter({text: `Długość: ${song.duration}`});
         }
         else if (interaction.options.getSubcommand() === 'playlist') {
             let url = interaction.options.getString('url');
@@ -78,16 +91,21 @@ module.exports = {
                 searchEngine: QueryType.YOUTUBE_PLAYLIST,
             });
 
-            if (result.tracks.length === 0)
-                return interaction.editReply('❌ | no results');
+            if (result.tracks.length === 0) {
+                errorEmbed
+                    .setTitle('❌  Brak wyników')
+                    .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
+                    .setColor(0xe33e32);
+                return interaction.editReply({embeds: [errorEmbed,]});
+            }
 
             const playlist = result.playlist;
-            await queue.addTracks(result.tracks);
+            await queue.addTracks(playlist.tracks);
 
 
             embed
                 .setColor(0xf6ff00)
-                .setTitle('🎶 | playlist added to queue')
+                .setTitle('🎶  playlista dodana do kolejki')
                 .setDescription(`**${result.tracks.length} songs from [${playlist.title}]**`)
                 .setThumbnail(playlist.thumbnail);
         }
@@ -98,18 +116,23 @@ module.exports = {
                 searchEngine: QueryType.YOUTUBE_SEARCH,
             });
 
-            if (result.tracks.length === 0)
-                return interaction.editReply('❌ | no results');
+            if (result.tracks.length === 0) {
+                errorEmbed
+                    .setTitle('❌  Brak wyników')
+                    .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
+                    .setColor(0xe33e32);
+                return interaction.editReply({embeds: [errorEmbed,]});
+            }
 
             const song = result.tracks[0];
             await queue.addTrack(song);
 
             embed
                 .setColor(0xf6ff00)
-                .setTitle('🎶 | song added to queue')
+                .setTitle('🎶  Dodano do kolejki')
                 .setDescription(`**[${song.title}]**`)
                 .setThumbnail(song.thumbnail)
-                .setFooter({text: `Duration: ${song.duration}`});
+                .setFooter({text: `Długość: ${song.duration}`});
         }
 
         if (!queue.playing)
