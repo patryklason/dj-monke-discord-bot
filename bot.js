@@ -94,18 +94,55 @@ else {
 
 
     client.player.on('trackStart', () => {
-        client.channels.cache.get(TEXT_CHANNEL_ID).send({content: 'playing now...'});
+        const queue = client.player.getQueue(GUILD_ID);
+        const song = queue.current;
+
+        if (song === lastSong)
+            return;
+
+
+        lastSong = song;
+
+        let bar = queue.createProgressBar({
+            queue: false,
+            length: 19,
+        });
+
+        let embed = new EmbedBuilder;
+
+        embed
+            .setColor(global.MAIN_COLOR)
+            .setTitle('🎶  Teraz gra...')
+            .setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`)
+            .setThumbnail(song.thumbnail);
+
+        client.channels.cache.get(TEXT_CHANNEL_ID).send({embeds: [embed]})
+            .then(message => {
+                lastMessage = message;
+                lastIntervalId = setInterval(() => {
+
+                    if (!queue.playing)
+                        return;
+
+                    bar = bar = queue.createProgressBar({
+                        queue: false,
+                        length: 19,
+                    });
+
+                    embed.setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`);
+
+                    message.edit({embeds: [embed]});
+                }, 9000);
+            })
+            .catch(e => console.log(e));
+
         console.log('Bot is playing song!');
     });
 
     client.player.on('trackEnd', () => {
-        const queue = client.player.getQueue(QUEUE_GUILD);
-        if (!queue.playing) {
-            queue.play()
-                .catch(e => {
-                    console.log(`Error playing next song in the queue: ${e}`);
-                });
-        }
+        clearInterval(lastIntervalId);
+        lastMessage.delete();
     });
+
 }
 

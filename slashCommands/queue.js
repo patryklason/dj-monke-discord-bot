@@ -33,14 +33,15 @@ module.exports = {
         await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
-                    .setDescription(`**Currently playing**\n` +
-                        (currentSong ? `\`[${currentSong.duration}]\` ${currentSong.title} -- <@${currentSong.requestedBy.id}>` : 'None') +
-                        `\n\n**Queue**\n${queueString}`
+                    .setColor(global.MAIN_COLOR)
+                    .setDescription(`**Teraz gra...**\n` +
+                        (currentSong ? `\`[${currentSong.duration}]\` ${currentSong.title} -- <@${currentSong.requestedBy.id}>` : 'Nic') +
+                        `\n\n**Kolejka**\n${queueString}`
                     )
                     .setFooter({
-                        text: `Page ${page + 1} / ${totalPages}`
+                        text: `Strona ${page + 1} / ${totalPages}`
                     })
-                    .setThumbnail(currentSong.thumbnail)
+                    .setThumbnail(currentSong.thumbnail),
             ],
         });
     }
