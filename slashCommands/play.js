@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder } = require('discord.js');
-const { QueryType } = require('discord-player');
+const { QueryType } = require('discord-player-play-dl');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -47,15 +47,13 @@ module.exports = {
             errorEmbed
                 .setTitle('❌  Błąd')
                 .setDescription('Aby użyć tej komendy, dołącz na kanał głosowy.')
-                .setColor(0xe33e32);
+                .setColor(global.ERROR_COLOR);
             return interaction.editReply({embeds: [errorEmbed,]});
         }
 
-
         const queue = await client.player.createQueue(interaction.guild);
         global.QUEUE_GUILD = queue.guild;
-        if (!queue.connection)
-            await queue.connect(interaction.member.voice.channel);
+
 
         let embed = new EmbedBuilder();
 
@@ -70,7 +68,7 @@ module.exports = {
                 errorEmbed
                     .setTitle('❌  Brak wyników')
                     .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
-                    .setColor(0xe33e32);
+                    .setColor(global.ERROR_COLOR);
                 return interaction.editReply({embeds: [errorEmbed,]});
             }
 
@@ -78,7 +76,7 @@ module.exports = {
             await queue.addTrack(song);
 
             embed
-                .setColor(0xf6ff00)
+                .setColor(global.MAIN_COLOR)
                 .setTitle('🎶  Dodano do kolejki')
                 .setDescription(`**[${song.title}]**`)
                 .setThumbnail(song.thumbnail)
@@ -95,7 +93,7 @@ module.exports = {
                 errorEmbed
                     .setTitle('❌  Brak wyników')
                     .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
-                    .setColor(0xe33e32);
+                    .setColor(global.ERROR_COLOR);
                 return interaction.editReply({embeds: [errorEmbed,]});
             }
 
@@ -104,7 +102,7 @@ module.exports = {
 
 
             embed
-                .setColor(0xf6ff00)
+                .setColor(global.MAIN_COLOR)
                 .setTitle('🎶  playlista dodana do kolejki')
                 .setDescription(`**${result.tracks.length} songs from [${playlist.title}]**`)
                 .setThumbnail(playlist.thumbnail);
@@ -120,15 +118,18 @@ module.exports = {
                 errorEmbed
                     .setTitle('❌  Brak wyników')
                     .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
-                    .setColor(0xe33e32);
+                    .setColor(global.ERROR_COLOR);
                 return interaction.editReply({embeds: [errorEmbed,]});
             }
+
+            if (!queue.connection)
+                await queue.connect(interaction.member.voice.channel);
 
             const song = result.tracks[0];
             await queue.addTrack(song);
 
             embed
-                .setColor(0xf6ff00)
+                .setColor(global.MAIN_COLOR)
                 .setTitle('🎶  Dodano do kolejki')
                 .setDescription(`**[${song.title}]**`)
                 .setThumbnail(song.thumbnail)
@@ -140,5 +141,6 @@ module.exports = {
         await interaction.editReply({
             embeds: [embed],
         });
+
     }
 }

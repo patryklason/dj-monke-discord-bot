@@ -3,15 +3,25 @@ const dotenv = require('dotenv');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
-const { Player } = require('discord-player');
+const { Player } = require('discord-player-play-dl');
+const {EmbedBuilder} = require("discord.js");
 
 // Loading the bot's token from .env
 dotenv.config();
 const TOKEN = process.env.TOKEN;
 
-// if running for the first time, load and deploy the slash commands
-// to run, use 'node bot.js load' command
+// when running for the first time, load and deploy the slash commands
+// to run, use 'node bot.js load' in terminal
 const LOAD_SLASH = process.argv[2] === 'load';
+
+// colors for embeds
+global.MAIN_COLOR = 0xf6ff00;
+global.ERROR_COLOR = 0xe33e32;
+
+// variables for 'now playing' embed editing
+let lastSong;
+let lastIntervalId;
+let lastMessage;
 
 // application id
 const CLIENT_ID = '1056694080136024205';
@@ -27,10 +37,7 @@ const client = new Discord.Client({
 
 client.slashCommands = new Discord.Collection();
 client.player = new Player(client, {
-   ytdlOptions: {
-       quality: 'highestaudio',
-       highWaterMark: 1 << 25,
-   }
+   connectionTimeout: 30000,
 });
 
 // load slash commands from files
@@ -69,7 +76,7 @@ else {
                 return;
 
             const slashCmd = client.slashCommands.get(interaction.commandName);
-            if (!slashCmd) interaction.reply('Invalid command!');
+            if (!slashCmd) interaction.reply('❌ Błędna komenda!');
 
             // gives more time for bot to respond (discord gives 3 seconds by default)
             await interaction.deferReply();
