@@ -4,11 +4,11 @@ const { EmbedBuilder } = require('discord.js');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('queue')
-        .setDescription('Displays the queue')
+        .setDescription('Wyświetla kolejkę')
         .addNumberOption((option) =>
         option
             .setName('page')
-            .setDescription('page of the queue')
+            .setDescription('strona kolejki')
             .setMinValue(1)
         ),
 
@@ -16,13 +16,13 @@ module.exports = {
         const queue = client.player.getQueue(interaction.guildId);
 
         if (!queue || !queue.playing)
-            return await interaction.editReply('There are no songs in the queue');
+            return await interaction.editReply('❌ Kolejka jest pusta.');
 
         const totalPages = Math.ceil(queue.tracks.length / 10) || 1;
         const page = (interaction.options.getNumber('page') || 1) - 1;
 
         if (page > totalPages)
-            return await interaction.editReply(`Invalid page, there are only ${totalPages} pages.`)
+            return await interaction.editReply(`❌ Błędna strona. Jest tylko ${totalPages} stron.`);
 
         const queueString = queue.tracks.slice(page * 10, page * 10 + 10).map((song, i) => {
             return `**${page * 10 + i + 1}.** \`[${song.duration}]\` ${song.title} -- <@${song.requestedBy.id}>`;

@@ -15,7 +15,7 @@ const TOKEN = process.env.TOKEN;
 const LOAD_SLASH = process.argv[2] === 'load';
 
 // colors for embeds
-global.MAIN_COLOR = 0xf6ff00;
+global.MAIN_COLOR = 0xffd553;
 global.ERROR_COLOR = 0xe33e32;
 
 // variables for 'now playing' embed editing
@@ -26,7 +26,7 @@ let lastMessage;
 // application id
 const CLIENT_ID = '1056694080136024205';
 // discord server id - this should be changed
-const GUILD_ID = '941059254742298684';
+const GUILD_ID = '391546077725327360';
 
 const client = new Discord.Client({
     intents: [
@@ -34,6 +34,7 @@ const client = new Discord.Client({
         'GuildVoiceStates',
     ],
 });
+
 
 client.slashCommands = new Discord.Collection();
 client.player = new Player(client, {
@@ -67,8 +68,13 @@ if (LOAD_SLASH) {
 }
 else {
     client.on('ready', () => {
+        client.user.setPresence({
+            activities: [{ name: 'Użyj /help !', type: Discord.ActivityType.Listening }],
+            status: 'online',
+        });
         console.log('Bot successfully logged in.');
     });
+
 
     client.on('interactionCreate', (interaction) => {
         async function handleCommand() {
@@ -94,6 +100,7 @@ else {
 
 
     client.player.on('trackStart', () => {
+
         const queue = client.player.getQueue(GUILD_ID);
         const song = queue.current;
 
@@ -105,7 +112,7 @@ else {
 
         let bar = queue.createProgressBar({
             queue: false,
-            length: 19,
+            length: 22,
         });
 
         let embed = new EmbedBuilder;
@@ -119,17 +126,17 @@ else {
         client.channels.cache.get(TEXT_CHANNEL_ID).send({embeds: [embed]})
             .then(message => {
                 lastMessage = message;
-                lastIntervalId = setInterval(() => {
+                global.lastIntervalId = lastIntervalId = setInterval(() => {
 
                     if (!queue.playing)
                         return;
 
                     bar = bar = queue.createProgressBar({
                         queue: false,
-                        length: 19,
+                        length: 22,
                     });
 
-                    embed.setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`);
+                    embed.setDescription(`**${song.title}**\n${song.author}\n\n0:00  ${bar}  ${song.duration}`);
 
                     message.edit({embeds: [embed]});
                 }, 9000);
@@ -142,6 +149,14 @@ else {
     client.player.on('trackEnd', () => {
         clearInterval(lastIntervalId);
         lastMessage.delete();
+    });
+
+    client.on('error', (e) => {
+        console.log(e);
+    });
+
+    client.on('connectionError', (e) => {
+        console.log(e);
     });
 
 }

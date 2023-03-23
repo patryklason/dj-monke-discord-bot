@@ -29,7 +29,7 @@ module.exports = {
                     .setTitle('⏭️  Skipnięto')
                     .setDescription(`${currentSong.title}`)
                     .setThumbnail(currentSong.thumbnail)
-                    .setColor(0xf6ff00),
+                    .setColor(global.MAIN_COLOR),
             ]
         });
     },
