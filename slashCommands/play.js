@@ -8,7 +8,7 @@ module.exports = {
         .setDescription('Plays the song from YT')
         .addStringOption(option =>
             option
-                .setName('url-fraze')
+                .setName('search-term')
                 .setDescription('Fraza lub link do YT/Spotify')
                 .setMinLength(1)
                 .setRequired(true)
@@ -38,7 +38,7 @@ module.exports = {
         const spotifyUrlPattern = /^.*spotify.com\/track\/.*$/i
         const scUrlPattern = /^.*soundcloud.com\/.*$/i
 
-        const searchTerm = interaction.options.getString('url-fraze').trim();
+        const searchTerm = interaction.options.getString('search-term').trim();
 
 
 

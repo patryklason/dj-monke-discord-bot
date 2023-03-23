@@ -13,10 +13,7 @@ module.exports = {
             .setColor(global.MAIN_COLOR)
             .setTitle('Cześć 👋')
             .setDescription('**Lista Komend**\n' +
-                '● /help - wyświetla komendy (wow, serio?)\n' +
-                '● /play search - wyszukuje utwór z YT\n' +
-                '● /play url - wyszukuje piosenke po url z YT lub Spotify\n' +
-                '● /play playlist - wyszukuje playliste po url z YT\n' +
+                '● /play - wyszukuje utwór/playliste z YT lub utwór ze Spotify\n' +
                 '● /queue - wyświetla kolejkę\n' +
                 '● /queue [nr strony] - wyświetla odpowiednią stronę kolejki\n' +
                 '● /pause - pauzuje utwór\n' +
