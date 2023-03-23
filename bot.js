@@ -9,6 +9,7 @@ const {EmbedBuilder} = require("discord.js");
 // Loading the bot's token from .env
 dotenv.config();
 const TOKEN = process.env.TOKEN;
+const GUILD_ID = process.env.GUILD_ID
 
 // when running for the first time, load and deploy the slash commands
 // to run, use 'node bot.js load' in terminal
@@ -26,7 +27,6 @@ let lastMessage;
 // application id
 const CLIENT_ID = '1056694080136024205';
 // discord server id - this should be changed
-const GUILD_ID = '941059254742298684';
 
 const client = new Discord.Client({
     intents: [
