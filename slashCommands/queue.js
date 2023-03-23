@@ -25,17 +25,25 @@ module.exports = {
             return await interaction.editReply(`❌ Błędna strona. Jest tylko ${totalPages} stron.`);
 
         const queueString = queue.tracks.slice(page * 10, page * 10 + 10).map((song, i) => {
+            if (song.duration.includes("NaN"))
+                return `**${page * 10 + i + 1}.** ${song.author} - ${song.title} -- <@${song.requestedBy.id}>`;
             return `**${page * 10 + i + 1}.** \`[${song.duration}]\` ${song.title} -- <@${song.requestedBy.id}>`;
         }).join('\n');
 
         const currentSong = queue.current;
+
+        let embedDescription;
+        if (currentSong.duration.includes("NaN"))
+            embedDescription = `${currentSong.author} - ${currentSong.title} -- <@${currentSong.requestedBy.id}>`;
+        else
+            embedDescription = `\`[${currentSong.duration}]\` ${currentSong.title} -- <@${currentSong.requestedBy.id}>`;
 
         await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
                     .setColor(global.MAIN_COLOR)
                     .setDescription(`**Teraz gra...**\n` +
-                        (currentSong ? `\`[${currentSong.duration}]\` ${currentSong.title} -- <@${currentSong.requestedBy.id}>` : 'Nic') +
+                        (currentSong ? embedDescription : 'Nic') +
                         `\n\n**Kolejka**\n${queueString}`
                     )
                     .setFooter({

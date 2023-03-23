@@ -38,7 +38,7 @@ const client = new Discord.Client({
 
 client.slashCommands = new Discord.Collection();
 client.player = new Player(client, {
-   connectionTimeout: 30000,
+   connectionTimeout: 30,
 });
 
 // load slash commands from files
