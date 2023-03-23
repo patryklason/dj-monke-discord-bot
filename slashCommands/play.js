@@ -6,38 +6,12 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('play')
         .setDescription('Plays the song from YT')
-        .addSubcommand((subcommand) => 
-        subcommand
-            .setName('url')
-            .setDescription('Szuka utworu po linku')
-            .addStringOption((option) =>
-                option
-                    .setName('url')
-                    .setDescription("Song's url")
-                    .setRequired(true)
-            )
-        )
-        .addSubcommand((subcommand) =>
-        subcommand
-            .setName('playlist')
-            .setDescription('Szuka playlisty po linku')
-            .addStringOption((option) =>
-                option
-                    .setName('url')
-                    .setDescription("Playlist's url")
-                    .setRequired(true)
-            )
-        )
-        .addSubcommand((subcommand) =>
-        subcommand
-            .setName('search')
-            .setDescription('Szuka piosenki po wpisanej frazie')
-            .addStringOption((option) =>
+        .addStringOption(option =>
             option
-                .setName('keywords')
-                .setDescription('keywords / author / title')
+                .setName('url-fraze')
+                .setDescription('Fraza lub link do YT/Spotify')
+                .setMinLength(1)
                 .setRequired(true)
-            )
         ),
     run: async ({client, interaction}) => {
 
@@ -54,15 +28,27 @@ module.exports = {
         const queue = await client.player.createQueue(interaction.guild);
         global.QUEUE_GUILD = queue.guild;
 
+        if (!queue.connection)
+            await queue.connect(interaction.member.voice.channel);
 
         let embed = new EmbedBuilder();
 
-        if (interaction.options.getSubcommand() === 'url') {
-            let url = interaction.options.getString('url');
-            const result = await client.player.search(url, {
+        const ytUrlPattern = /^.*youtube\.com\/watch\?v=.*$/i
+        const ytPlaylistPattern = /^.*youtube\.com\/playlist\?list=.*$/i
+        const spotifyUrlPattern = /^.*spotify.com\/track\/.*$/i
+        const scUrlPattern = /^.*soundcloud.com\/.*$/i
+
+        const searchTerm = interaction.options.getString('url-fraze').trim();
+
+
+
+        if (ytUrlPattern.test(searchTerm)) {
+
+            const result = await client.player.search(searchTerm, {
                 requestedBy: interaction.user,
                 searchEngine: QueryType.YOUTUBE_VIDEO,
             });
+
 
             if (result.tracks.length === 0) {
                 errorEmbed
@@ -78,16 +64,17 @@ module.exports = {
             embed
                 .setColor(global.MAIN_COLOR)
                 .setTitle('🎶  Dodano do kolejki')
-                .setDescription(`**[${song.title}]**`)
+                .setDescription(`**${song.title}**\n${song.author}`)
                 .setThumbnail(song.thumbnail)
                 .setFooter({text: `Długość: ${song.duration}`});
         }
-        else if (interaction.options.getSubcommand() === 'playlist') {
-            let url = interaction.options.getString('url');
-            const result = await client.player.search(url, {
+        else if (ytPlaylistPattern.test(searchTerm)) {
+
+            const result = await client.player.search(searchTerm, {
                 requestedBy: interaction.user,
                 searchEngine: QueryType.YOUTUBE_PLAYLIST,
             });
+
 
             if (result.tracks.length === 0) {
                 errorEmbed
@@ -104,14 +91,12 @@ module.exports = {
             embed
                 .setColor(global.MAIN_COLOR)
                 .setTitle('🎶  playlista dodana do kolejki')
-                .setDescription(`**${result.tracks.length} songs from [${playlist.title}]**`)
-                .setThumbnail(playlist.thumbnail);
+                .setDescription(`**Dodano ${result.tracks.length} utworów z [${playlist.title}]**.`);
         }
-        else if (interaction.options.getSubcommand() === 'search') {
-            let url = interaction.options.getString('keywords');
-            const result = await client.player.search(url, {
+        else if (spotifyUrlPattern.test(searchTerm)) {
+            const result = await client.player.search(searchTerm, {
                 requestedBy: interaction.user,
-                searchEngine: QueryType.YOUTUBE_SEARCH,
+                searchEngine: QueryType.SPOTIFY_SONG,
             });
 
             if (result.tracks.length === 0) {
@@ -122,8 +107,40 @@ module.exports = {
                 return interaction.editReply({embeds: [errorEmbed,]});
             }
 
-            if (!queue.connection)
-                await queue.connect(interaction.member.voice.channel);
+            const song = result.tracks[0];
+            await queue.addTrack(song);
+
+            embed
+                .setColor(global.MAIN_COLOR)
+                .setTitle('🎶  Dodano do kolejki')
+                .setDescription(`${song.author} - **${song.title}**`)
+                .setThumbnail(song.thumbnail)
+                .setFooter({text: `Długość: ${song.duration}`});
+        }
+
+        else if (scUrlPattern.test(searchTerm)) {
+
+            errorEmbed
+                .setTitle('❌  Soundclound nie jest obsługiwany')
+                .setDescription('Małpka jeszcze nie potrafi grać z Soundcloud\'a :(.')
+                .setColor(global.ERROR_COLOR);
+            return interaction.editReply({embeds: [errorEmbed,]});
+        }
+
+        else {
+            const result = await client.player.search(searchTerm, {
+                requestedBy: interaction.user,
+                searchEngine: QueryType.YOUTUBE_SEARCH,
+            });
+
+
+            if (result.tracks.length === 0) {
+                errorEmbed
+                    .setTitle('❌  Brak wyników')
+                    .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
+                    .setColor(global.ERROR_COLOR);
+                return interaction.editReply({embeds: [errorEmbed,]});
+            }
 
             const song = result.tracks[0];
             await queue.addTrack(song);
@@ -131,7 +148,7 @@ module.exports = {
             embed
                 .setColor(global.MAIN_COLOR)
                 .setTitle('🎶  Dodano do kolejki')
-                .setDescription(`**[${song.title}]**`)
+                .setDescription(`**${song.title}**\n${song.author}`)
                 .setThumbnail(song.thumbnail)
                 .setFooter({text: `Długość: ${song.duration}`});
         }
