@@ -15,7 +15,7 @@ const TOKEN = process.env.TOKEN;
 const LOAD_SLASH = process.argv[2] === 'load';
 
 // colors for embeds
-global.MAIN_COLOR = 0xf6ff00;
+global.MAIN_COLOR = 0xffd553;
 global.ERROR_COLOR = 0xe33e32;
 
 // variables for 'now playing' embed editing
@@ -35,9 +35,10 @@ const client = new Discord.Client({
     ],
 });
 
+
 client.slashCommands = new Discord.Collection();
 client.player = new Player(client, {
-   connectionTimeout: 30000,
+   connectionTimeout: 30,
 });
 
 // load slash commands from files
@@ -67,8 +68,13 @@ if (LOAD_SLASH) {
 }
 else {
     client.on('ready', () => {
+        client.user.setPresence({
+            activities: [{ name: 'Użyj /help !', type: Discord.ActivityType.Listening }],
+            status: 'online',
+        });
         console.log('Bot successfully logged in.');
     });
+
 
     client.on('interactionCreate', (interaction) => {
         async function handleCommand() {
@@ -94,42 +100,56 @@ else {
 
 
     client.player.on('trackStart', () => {
+
         const queue = client.player.getQueue(GUILD_ID);
         const song = queue.current;
 
         if (song === lastSong)
             return;
 
-
         lastSong = song;
-
-        let bar = queue.createProgressBar({
-            queue: false,
-            length: 19,
-        });
-
         let embed = new EmbedBuilder;
 
-        embed
-            .setColor(global.MAIN_COLOR)
-            .setTitle('🎶  Teraz gra...')
-            .setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`)
-            .setThumbnail(song.thumbnail);
+        const isSpotifySong = song.duration.includes("NaN");
+
+        if (isSpotifySong) {
+            embed
+                .setColor(global.MAIN_COLOR)
+                .setTitle('🎶  Teraz gra...')
+                .setDescription(`${song.author} - **${song.title}**`)
+                .setThumbnail(song.thumbnail);
+        }
+        else {
+            let bar = queue.createProgressBar({
+                queue: false,
+                length: 22,
+            });
+
+            embed
+                .setColor(global.MAIN_COLOR)
+                .setTitle('🎶  Teraz gra...')
+                .setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`)
+                .setThumbnail(song.thumbnail);
+        }
+
 
         client.channels.cache.get(TEXT_CHANNEL_ID).send({embeds: [embed]})
             .then(message => {
                 lastMessage = message;
-                lastIntervalId = setInterval(() => {
+                if (isSpotifySong)
+                    return;
+
+                global.lastIntervalId = lastIntervalId = setInterval(() => {
 
                     if (!queue.playing)
                         return;
 
                     bar = bar = queue.createProgressBar({
                         queue: false,
-                        length: 19,
+                        length: 22,
                     });
 
-                    embed.setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`);
+                    embed.setDescription(`**${song.title}**\n${song.author}\n\n0:00  ${bar}  ${song.duration}`);
 
                     message.edit({embeds: [embed]});
                 }, 9000);
@@ -140,8 +160,21 @@ else {
     });
 
     client.player.on('trackEnd', () => {
-        clearInterval(lastIntervalId);
+        try{
+            clearInterval(lastIntervalId);
+        } catch (e) {
+            console.log(e);
+        }
+
         lastMessage.delete();
+    });
+
+    client.on('error', (e) => {
+        console.log(e);
+    });
+
+    client.on('connectionError', (e) => {
+        console.log(e);
     });
 
 }
