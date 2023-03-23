@@ -26,7 +26,7 @@ let lastMessage;
 // application id
 const CLIENT_ID = '1056694080136024205';
 // discord server id - this should be changed
-const GUILD_ID = '391546077725327360';
+const GUILD_ID = '941059254742298684';
 
 const client = new Discord.Client({
     intents: [
@@ -107,25 +107,38 @@ else {
         if (song === lastSong)
             return;
 
-
         lastSong = song;
-
-        let bar = queue.createProgressBar({
-            queue: false,
-            length: 22,
-        });
-
         let embed = new EmbedBuilder;
 
-        embed
-            .setColor(global.MAIN_COLOR)
-            .setTitle('🎶  Teraz gra...')
-            .setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`)
-            .setThumbnail(song.thumbnail);
+        const isSpotifySong = song.duration.includes("NaN");
+
+        if (isSpotifySong) {
+            embed
+                .setColor(global.MAIN_COLOR)
+                .setTitle('🎶  Teraz gra...')
+                .setDescription(`${song.author} - **${song.title}**`)
+                .setThumbnail(song.thumbnail);
+        }
+        else {
+            let bar = queue.createProgressBar({
+                queue: false,
+                length: 22,
+            });
+
+            embed
+                .setColor(global.MAIN_COLOR)
+                .setTitle('🎶  Teraz gra...')
+                .setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`)
+                .setThumbnail(song.thumbnail);
+        }
+
 
         client.channels.cache.get(TEXT_CHANNEL_ID).send({embeds: [embed]})
             .then(message => {
                 lastMessage = message;
+                if (isSpotifySong)
+                    return;
+
                 global.lastIntervalId = lastIntervalId = setInterval(() => {
 
                     if (!queue.playing)
@@ -147,7 +160,12 @@ else {
     });
 
     client.player.on('trackEnd', () => {
-        clearInterval(lastIntervalId);
+        try{
+            clearInterval(lastIntervalId);
+        } catch (e) {
+            console.log(e);
+        }
+
         lastMessage.delete();
     });
 

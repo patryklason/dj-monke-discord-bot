@@ -114,8 +114,7 @@ module.exports = {
                 .setColor(global.MAIN_COLOR)
                 .setTitle('🎶  Dodano do kolejki')
                 .setDescription(`${song.author} - **${song.title}**`)
-                .setThumbnail(song.thumbnail)
-                .setFooter({text: `Długość: ${song.duration}`});
+                .setThumbnail(song.thumbnail);
         }
 
         else if (scUrlPattern.test(searchTerm)) {
