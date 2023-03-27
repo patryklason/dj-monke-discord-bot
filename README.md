@@ -1,5 +1,5 @@
 # DJ Monke - Discord music bot
-Music Bot with polish interface for private Discord server, playing songs from YouTube or Spotify.
+Music Bot for private Discord server, playing songs from YouTube or Spotify.
 ## Available Commands
 - /play - plays a song from YouTube/Spotify or playlist from YouTube
 - /queue - displays the queue
