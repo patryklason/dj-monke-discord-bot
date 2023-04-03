@@ -10,7 +10,6 @@ module.exports = {
 
         if (!queue) return await interaction.editReply('❌ Kolejka jest pusta.');
 
-        clearInterval(global.lastIntervalId);
         queue.destroy();
         await interaction.editReply('👋 Pa!');
     },

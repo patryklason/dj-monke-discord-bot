@@ -70,10 +70,12 @@ else {
     client.on('ready', () => {
         client.user.setPresence({
             activities: [{ name: 'Użyj /help !', type: Discord.ActivityType.Listening }],
-            status: 'online',
+            status: 'online'
         });
         console.log('Bot successfully logged in.');
     });
+
+
 
 
     client.on('interactionCreate', (interaction) => {
@@ -90,7 +92,10 @@ else {
 
             global.TEXT_CHANNEL_ID = interaction.channel.id;
         }
-        handleCommand();
+
+        handleCommand().catch(e => {
+            console.log(e)
+        });
     });
     client.login(TOKEN)
         .catch(e => {
@@ -139,20 +144,26 @@ else {
                 if (isSpotifySong)
                     return;
 
-                global.lastIntervalId = lastIntervalId = setInterval(() => {
+                // optimal interval time based on song duration
+                const intervalTime = Math.ceil(songDurationInSeconds(song.duration) / 22) * 1000
+
+                lastIntervalId = setInterval(() => {
 
                     if (!queue.playing)
                         return;
 
-                    bar = bar = queue.createProgressBar({
+                    const bar = queue.createProgressBar({
                         queue: false,
                         length: 22,
                     });
 
-                    embed.setDescription(`**${song.title}**\n${song.author}\n\n0:00  ${bar}  ${song.duration}`);
+                    const currentTimestamp = queue.getPlayerTimestamp().current
+
+                    embed.setDescription(`**${song.title}**\n${song.author}\n\n${currentTimestamp}  ${bar}  ${song.duration}`);
 
                     message.edit({embeds: [embed]});
-                }, 9000);
+
+                }, intervalTime);
             })
             .catch(e => console.log(e));
 
@@ -162,12 +173,19 @@ else {
     client.player.on('trackEnd', () => {
         try{
             clearInterval(lastIntervalId);
+            lastIntervalId = null;
+            lastMessage.delete();
+            lastMessage = null;
         } catch (e) {
             console.log(e);
         }
 
-        lastMessage.delete();
     });
+
+    client.player.on('error', (queue, e) => {
+        console.log(e);
+    });
+
 
     client.on('error', (e) => {
         console.log(e);
@@ -177,5 +195,20 @@ else {
         console.log(e);
     });
 
+    function songDurationInSeconds(duration) {
+
+        const numbers = duration.split(':').map(Number)
+
+        let result = 0;
+        let j = 0;
+
+        for (let i = numbers.length - 1; i >= 0; i--) {
+            if (!isNaN(numbers[i])){
+                result += numbers[i] * Math.pow(60, j)
+                j++;
+            }
+        }
+        return result;
+    }
 }
 
