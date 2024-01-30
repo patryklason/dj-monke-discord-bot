@@ -1,6 +1,8 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder } = require('discord.js');
 const { QueryType } = require('discord-player-play-dl');
+const defaultErrorEmbed = require("../embeds/defaultError");
+const songErrorEmbed = require("../embeds/errorSongNotFound");
+const songAddedEmbed = require('../embeds/song');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -15,15 +17,10 @@ module.exports = {
         ),
     run: async ({client, interaction}) => {
 
-        let errorEmbed = new EmbedBuilder();
-
         if (!interaction.member.voice.channel) {
-            errorEmbed
-                .setTitle('❌  Błąd')
-                .setDescription('Aby użyć tej komendy, dołącz na kanał głosowy.')
-                .setColor(global.ERROR_COLOR);
-            return interaction.editReply({embeds: [errorEmbed,]});
+            return interaction.editReply({embeds: [defaultErrorEmbed('Aby użyć tej komendy, dołącz na kanał głosowy.')]});
         }
+
 
         const queue = await client.player.createQueue(interaction.guild);
         global.QUEUE_GUILD = queue.guild;
@@ -31,15 +28,19 @@ module.exports = {
         if (!queue.connection)
             await queue.connect(interaction.member.voice.channel);
 
-        let embed = new EmbedBuilder();
+        const embedContent = {
+            title: '🎶  Dodano do kolejki',
+            description: '',
+            thumbnail: null,
+            footer: ''
+        };
 
-        const ytUrlPattern = /^.*youtube\.com\/watch\?v=.*$/i
+        const ytUrlPattern = /https?:\/\/(?:www\.|music\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-_]*)(&(amp;)?[\w?=]*)?/;
         const ytPlaylistPattern = /^.*youtube\.com\/playlist\?list=.*$/i
         const spotifyUrlPattern = /^.*spotify.com\/track\/.*$/i
         const scUrlPattern = /^.*soundcloud.com\/.*$/i
 
         const searchTerm = interaction.options.getString('search-term').trim();
-
 
 
         if (ytUrlPattern.test(searchTerm)) {
@@ -51,22 +52,16 @@ module.exports = {
 
 
             if (result.tracks.length === 0) {
-                errorEmbed
-                    .setTitle('❌  Brak wyników')
-                    .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
-                    .setColor(global.ERROR_COLOR);
-                return interaction.editReply({embeds: [errorEmbed,]});
+                return interaction.editReply({embeds: [songErrorEmbed()]});
             }
 
             const song = result.tracks[0];
             await queue.addTrack(song);
 
-            embed
-                .setColor(global.MAIN_COLOR)
-                .setTitle('🎶  Dodano do kolejki')
-                .setDescription(`**${song.title}**\n${song.author}`)
-                .setThumbnail(song.thumbnail)
-                .setFooter({text: `Długość: ${song.duration}`});
+            embedContent.title = '🎶  Dodano do kolejki';
+            embedContent.description = `**${song.title}**\n${song.author}`;
+            embedContent.thumbnail = song.thumbnail;
+            embedContent.footer = `Długość: ${song.duration}`;
         }
         else if (ytPlaylistPattern.test(searchTerm)) {
 
@@ -77,21 +72,12 @@ module.exports = {
 
 
             if (result.tracks.length === 0) {
-                errorEmbed
-                    .setTitle('❌  Brak wyników')
-                    .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
-                    .setColor(global.ERROR_COLOR);
-                return interaction.editReply({embeds: [errorEmbed,]});
+                return interaction.editReply({embeds: [songErrorEmbed()]});
             }
 
             const playlist = result.playlist;
             await queue.addTracks(playlist.tracks);
-
-
-            embed
-                .setColor(global.MAIN_COLOR)
-                .setTitle('🎶  playlista dodana do kolejki')
-                .setDescription(`**Dodano ${result.tracks.length} utworów z [${playlist.title}]**.`);
+            embedContent.description = `**Dodano ${result.tracks.length} utworów z [${playlist.title}]**.`;
         }
         else if (spotifyUrlPattern.test(searchTerm)) {
             const result = await client.player.search(searchTerm, {
@@ -100,30 +86,18 @@ module.exports = {
             });
 
             if (result.tracks.length === 0) {
-                errorEmbed
-                    .setTitle('❌  Brak wyników')
-                    .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
-                    .setColor(global.ERROR_COLOR);
-                return interaction.editReply({embeds: [errorEmbed,]});
+                return interaction.editReply({embeds: [songErrorEmbed()]});
             }
 
             const song = result.tracks[0];
             await queue.addTrack(song);
 
-            embed
-                .setColor(global.MAIN_COLOR)
-                .setTitle('🎶  Dodano do kolejki')
-                .setDescription(`${song.author} - **${song.title}**`)
-                .setThumbnail(song.thumbnail);
+            embedContent.description = `${song.author} - **${song.title}**`;
+            embedContent.thumbnail = song.thumbnail;
         }
 
         else if (scUrlPattern.test(searchTerm)) {
-
-            errorEmbed
-                .setTitle('❌  Soundclound nie jest obsługiwany')
-                .setDescription('Małpka jeszcze nie potrafi grać z Soundcloud\'a :(.')
-                .setColor(global.ERROR_COLOR);
-            return interaction.editReply({embeds: [errorEmbed,]});
+            return interaction.editReply({embeds: [defaultErrorEmbed('Soundcloud nie jest obsługiwany. Małpka za głupia na takie rzeczy:(')]});
         }
 
         else {
@@ -134,28 +108,21 @@ module.exports = {
 
 
             if (result.tracks.length === 0) {
-                errorEmbed
-                    .setTitle('❌  Brak wyników')
-                    .setDescription('Małpka nie znalazła niczego, co pasowało by do twojego wyszukania :(.')
-                    .setColor(global.ERROR_COLOR);
-                return interaction.editReply({embeds: [errorEmbed,]});
+                return interaction.editReply({embeds: [songErrorEmbed()]});
             }
 
             const song = result.tracks[0];
             await queue.addTrack(song);
 
-            embed
-                .setColor(global.MAIN_COLOR)
-                .setTitle('🎶  Dodano do kolejki')
-                .setDescription(`**${song.title}**\n${song.author}`)
-                .setThumbnail(song.thumbnail)
-                .setFooter({text: `Długość: ${song.duration}`});
+            embedContent.description = `**${song.title}**\n${song.author}`;
+            embedContent.thumbnail = song.thumbnail;
+            embedContent.footer = `Długość: ${song.duration}`;
         }
 
         if (!queue.playing)
             await queue.play();
         await interaction.editReply({
-            embeds: [embed],
+            embeds: [songAddedEmbed(embedContent.title, embedContent.description, embedContent.thumbnail, embedContent.footer)],
         });
 
     }

@@ -4,29 +4,33 @@ const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
 const { Player } = require('discord-player-play-dl');
-const {EmbedBuilder} = require("discord.js");
+const {EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder} = require("discord.js");
+const {MAIN_COLOR} = require("./embeds/COLORS");
 
 // Loading the bot's token from .env
 dotenv.config();
-const TOKEN = process.env.TOKEN;
-const GUILD_ID = process.env.GUILD_ID
+let TOKEN = process.env.TOKEN;
+let GUILD_ID = process.env.GUILD_ID;
+let CLIENT_ID = process.env.CLIENT_ID;
 
 // when running for the first time, load and deploy the slash commands
 // to run, use 'node bot.js load' in terminal
 const LOAD_SLASH = process.argv[2] === 'load';
 
-// colors for embeds
-global.MAIN_COLOR = 0xffd553;
-global.ERROR_COLOR = 0xe33e32;
+// start testing instance or deploy commands for testing instance
+const TEST_ENVIRONMENT = process.argv[2] === 'test' || process.argv[3] === 'test';
+if (TEST_ENVIRONMENT) {
+    TOKEN = process.env.TEST_TOKEN;
+    GUILD_ID = process.env.TEST_GUILD_ID;
+    CLIENT_ID = process.env.TEST_CLIENT_ID;
+}
+
 
 // variables for 'now playing' embed editing
 let lastSong;
 let lastIntervalId;
 let lastMessage;
 
-// application id
-const CLIENT_ID = '1056694080136024205';
-// discord server id - this should be changed
 
 const client = new Discord.Client({
     intents: [
@@ -69,7 +73,7 @@ if (LOAD_SLASH) {
 else {
     client.on('ready', () => {
         client.user.setPresence({
-            activities: [{ name: 'Użyj /help !', type: Discord.ActivityType.Listening }],
+            activities: [{ name: 'Use /help !', type: Discord.ActivityType.Listening }],
             status: 'online'
         });
         console.log('Bot successfully logged in.');
@@ -80,6 +84,14 @@ else {
 
     client.on('interactionCreate', (interaction) => {
         async function handleCommand() {
+            if (interaction.isButton()) {
+                const slashCmd = client.slashCommands.get(interaction.customId);
+                if (!slashCmd) interaction.reply('❌ Błędna komenda!');
+                await interaction.deferReply();
+                await slashCmd.run({client, interaction});
+                return;
+            }
+
             if (!interaction.isCommand())
                 return;
 
@@ -119,7 +131,7 @@ else {
 
         if (isSpotifySong) {
             embed
-                .setColor(global.MAIN_COLOR)
+                .setColor(MAIN_COLOR)
                 .setTitle('🎶  Teraz gra...')
                 .setDescription(`${song.author} - **${song.title}**`)
                 .setThumbnail(song.thumbnail);
@@ -131,11 +143,34 @@ else {
             });
 
             embed
-                .setColor(global.MAIN_COLOR)
+                .setColor(MAIN_COLOR)
                 .setTitle('🎶  Teraz gra...')
-                .setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`)
+                .setDescription(`**${song.title}**\n${song.author}\n\n  ${bar}  ${song.duration}`)
                 .setThumbnail(song.thumbnail);
         }
+
+        const previous = new ButtonBuilder()
+            .setCustomId('previous')
+            .setLabel('⏮️')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true);
+
+        const pause = new ButtonBuilder()
+            .setCustomId('pause')
+            .setLabel('⏸️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const resume = new ButtonBuilder()
+            .setCustomId('resume')
+            .setLabel('▶️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const next = new ButtonBuilder()
+            .setCustomId('skip')
+            .setLabel('⏭️')
+            .setStyle(ButtonStyle.Secondary);
+
+
 
 
         client.channels.cache.get(TEXT_CHANNEL_ID).send({embeds: [embed]})
@@ -144,9 +179,7 @@ else {
                 if (isSpotifySong)
                     return;
 
-                // optimal interval time based on song duration
-                const intervalTime = Math.ceil(songDurationInSeconds(song.duration) / 22) * 1000
-
+                const intervalTime = 1000;
                 lastIntervalId = setInterval(() => {
 
                     if (!queue.playing)
@@ -161,7 +194,17 @@ else {
 
                     embed.setDescription(`**${song.title}**\n${song.author}\n\n${currentTimestamp}  ${bar}  ${song.duration}`);
 
-                    message.edit({embeds: [embed]});
+                    let row;
+                    if (!queue.connection.paused) {
+                        row = new ActionRowBuilder()
+                            .addComponents(previous, pause, next);
+                    } else {
+                        row = new ActionRowBuilder()
+                            .addComponents(previous, resume, next);
+                    }
+
+
+                    message.edit({embeds: [embed], components: [row]});
 
                 }, intervalTime);
             })
@@ -172,8 +215,10 @@ else {
 
     client.player.on('trackEnd', () => {
         try{
+            console.log('Bot stopped playing a song');
             clearInterval(lastIntervalId);
             lastIntervalId = null;
+            console.log(lastMessage);
             lastMessage.delete();
             lastMessage = null;
         } catch (e) {
@@ -195,20 +240,8 @@ else {
         console.log(e);
     });
 
-    function songDurationInSeconds(duration) {
-
-        const numbers = duration.split(':').map(Number)
-
-        let result = 0;
-        let j = 0;
-
-        for (let i = numbers.length - 1; i >= 0; i--) {
-            if (!isNaN(numbers[i])){
-                result += numbers[i] * Math.pow(60, j)
-                j++;
-            }
-        }
-        return result;
-    }
+    client.player.on('connectionError', (e) => {
+        console.log(e);
+    });
 }
 
