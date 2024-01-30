@@ -4,7 +4,7 @@ const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
 const { Player } = require('discord-player-play-dl');
-const {EmbedBuilder} = require("discord.js");
+const {EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder} = require("discord.js");
 const {MAIN_COLOR} = require("./embeds/COLORS");
 
 // Loading the bot's token from .env
@@ -84,6 +84,14 @@ else {
 
     client.on('interactionCreate', (interaction) => {
         async function handleCommand() {
+            if (interaction.isButton()) {
+                const slashCmd = client.slashCommands.get(interaction.customId);
+                if (!slashCmd) interaction.reply('❌ Błędna komenda!');
+                await interaction.deferReply();
+                await slashCmd.run({client, interaction});
+                return;
+            }
+
             if (!interaction.isCommand())
                 return;
 
@@ -141,6 +149,29 @@ else {
                 .setThumbnail(song.thumbnail);
         }
 
+        const previous = new ButtonBuilder()
+            .setCustomId('previous')
+            .setLabel('⏮️')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true);
+
+        const pause = new ButtonBuilder()
+            .setCustomId('pause')
+            .setLabel('⏸️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const resume = new ButtonBuilder()
+            .setCustomId('resume')
+            .setLabel('▶️')
+            .setStyle(ButtonStyle.Secondary);
+
+        const next = new ButtonBuilder()
+            .setCustomId('skip')
+            .setLabel('⏭️')
+            .setStyle(ButtonStyle.Secondary);
+
+
+
 
         client.channels.cache.get(TEXT_CHANNEL_ID).send({embeds: [embed]})
             .then(message => {
@@ -148,10 +179,7 @@ else {
                 if (isSpotifySong)
                     return;
 
-                // optimal interval time based on song duration
-                //const intervalTime = Math.ceil(songDurationInSeconds(song.duration) / 22) * 1000
                 const intervalTime = 1000;
-
                 lastIntervalId = setInterval(() => {
 
                     if (!queue.playing)
@@ -166,7 +194,17 @@ else {
 
                     embed.setDescription(`**${song.title}**\n${song.author}\n\n${currentTimestamp}  ${bar}  ${song.duration}`);
 
-                    message.edit({embeds: [embed]});
+                    let row;
+                    if (!queue.connection.paused) {
+                        row = new ActionRowBuilder()
+                            .addComponents(previous, pause, next);
+                    } else {
+                        row = new ActionRowBuilder()
+                            .addComponents(previous, resume, next);
+                    }
+
+
+                    message.edit({embeds: [embed], components: [row]});
 
                 }, intervalTime);
             })
@@ -177,8 +215,10 @@ else {
 
     client.player.on('trackEnd', () => {
         try{
+            console.log('Bot stopped playing a song');
             clearInterval(lastIntervalId);
             lastIntervalId = null;
+            console.log(lastMessage);
             lastMessage.delete();
             lastMessage = null;
         } catch (e) {
@@ -201,7 +241,7 @@ else {
     });
 
     client.player.on('connectionError', (e) => {
-        console.error(e);
+        console.log(e);
     });
 }
 

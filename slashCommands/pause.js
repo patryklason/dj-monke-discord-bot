@@ -16,6 +16,6 @@ module.exports = {
         if (!queue) return await interaction.editReply({embeds: [defaultErrorEmbed('Kolejka jest pusta')]});
 
         queue.setPaused(true);
-        await interaction.editReply('✅ Zapauzowano');
+        await interaction.deleteReply();
     },
 }

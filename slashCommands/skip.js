@@ -22,7 +22,7 @@ module.exports = {
         queue.skip();
 
         await interaction.editReply({
-            embeds: [successEmbed('⏭️  Skipnięto', `${currentSong.title}`, currentSong.thumbnail)]
+            embeds: [successEmbed('⏭️  Pominięto', `${currentSong.title}, przez ${interaction.user}`, currentSong.thumbnail)]
         });
     },
-}
+};

@@ -8,7 +8,6 @@ module.exports = {
 
     run: async ({ client, interaction }) => {
         const queue = client.player.getQueue(interaction.guildId);
-
         if (!interaction.guild.members.me.voice.channel || !interaction.member.voice.channel || interaction.guild.members.me.voice.channel.id !== interaction.member.voice.channel.id) {
             return interaction.editReply({embeds: [defaultErrorEmbed('Aby wykonać tę akcję musisz być na tym samym kanale głosowym')]});
         }
@@ -16,6 +15,6 @@ module.exports = {
         if (!queue) return await interaction.editReply({embeds: [defaultErrorEmbed('Kolejka jest pusta')]});
 
         queue.setPaused(false);
-        await interaction.editReply('✅ Wznowiono');
+        await interaction.deleteReply();
     },
 }
