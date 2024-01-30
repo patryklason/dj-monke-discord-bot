@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
+const {MAIN_COLOR} = require("../embeds/COLORS");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -41,7 +42,7 @@ module.exports = {
         await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
-                    .setColor(global.MAIN_COLOR)
+                    .setColor(MAIN_COLOR)
                     .setDescription(`**Teraz gra...**\n` +
                         (currentSong ? embedDescription : 'Nic') +
                         `\n\n**Kolejka**\n${queueString}`

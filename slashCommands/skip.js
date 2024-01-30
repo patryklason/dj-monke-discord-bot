@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder } = require('discord.js');
+const defaultErrorEmbed = require('../embeds/defaultError');
+const successEmbed = require('../embeds/success');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -9,28 +10,19 @@ module.exports = {
     run: async ({ client, interaction }) => {
         const queue = client.player.getQueue(interaction.guildId);
 
-        let errorEmbed = new EmbedBuilder();
+        if (!interaction.guild.members.me.voice.channel || !interaction.member.voice.channel || interaction.guild.members.me.voice.channel.id !== interaction.member.voice.channel.id) {
+            return interaction.editReply({embeds: [defaultErrorEmbed('Aby wykonać tę akcję musisz być na tym samym kanale głosowym')]});
+        }
 
         if (!queue) {
-            errorEmbed
-                .setTitle('❌  Błąd')
-                .setDescription('Brak utworów w kolejce.')
-                .setColor(0xe33e32);
-            return interaction.editReply({embeds: [errorEmbed,]});
+            return interaction.editReply({embeds: [defaultErrorEmbed('Brak utworów w kolejce')]});
         }
 
         const currentSong = queue.current;
-
         queue.skip();
 
         await interaction.editReply({
-            embeds: [
-                new EmbedBuilder()
-                    .setTitle('⏭️  Skipnięto')
-                    .setDescription(`${currentSong.title}`)
-                    .setThumbnail(currentSong.thumbnail)
-                    .setColor(global.MAIN_COLOR),
-            ]
+            embeds: [successEmbed('⏭️  Skipnięto', `${currentSong.title}`, currentSong.thumbnail)]
         });
     },
 }

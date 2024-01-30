@@ -5,28 +5,32 @@ const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
 const { Player } = require('discord-player-play-dl');
 const {EmbedBuilder} = require("discord.js");
+const {MAIN_COLOR} = require("./embeds/COLORS");
 
 // Loading the bot's token from .env
 dotenv.config();
-const TOKEN = process.env.TOKEN;
-const GUILD_ID = process.env.GUILD_ID
+let TOKEN = process.env.TOKEN;
+let GUILD_ID = process.env.GUILD_ID;
+let CLIENT_ID = process.env.CLIENT_ID;
 
 // when running for the first time, load and deploy the slash commands
 // to run, use 'node bot.js load' in terminal
 const LOAD_SLASH = process.argv[2] === 'load';
 
-// colors for embeds
-global.MAIN_COLOR = 0xffd553;
-global.ERROR_COLOR = 0xe33e32;
+// start testing instance or deploy commands for testing instance
+const TEST_ENVIRONMENT = process.argv[2] === 'test' || process.argv[3] === 'test';
+if (TEST_ENVIRONMENT) {
+    TOKEN = process.env.TEST_TOKEN;
+    GUILD_ID = process.env.TEST_GUILD_ID;
+    CLIENT_ID = process.env.TEST_CLIENT_ID;
+}
+
 
 // variables for 'now playing' embed editing
 let lastSong;
 let lastIntervalId;
 let lastMessage;
 
-// application id
-const CLIENT_ID = '1056694080136024205';
-// discord server id - this should be changed
 
 const client = new Discord.Client({
     intents: [
@@ -69,7 +73,7 @@ if (LOAD_SLASH) {
 else {
     client.on('ready', () => {
         client.user.setPresence({
-            activities: [{ name: 'Użyj /help !', type: Discord.ActivityType.Listening }],
+            activities: [{ name: 'Use /help !', type: Discord.ActivityType.Listening }],
             status: 'online'
         });
         console.log('Bot successfully logged in.');
@@ -119,7 +123,7 @@ else {
 
         if (isSpotifySong) {
             embed
-                .setColor(global.MAIN_COLOR)
+                .setColor(MAIN_COLOR)
                 .setTitle('🎶  Teraz gra...')
                 .setDescription(`${song.author} - **${song.title}**`)
                 .setThumbnail(song.thumbnail);
@@ -131,9 +135,9 @@ else {
             });
 
             embed
-                .setColor(global.MAIN_COLOR)
+                .setColor(MAIN_COLOR)
                 .setTitle('🎶  Teraz gra...')
-                .setDescription(`**${song.title}**\n\n0:00  ${bar}  ${song.duration}`)
+                .setDescription(`**${song.title}**\n${song.author}\n\n  ${bar}  ${song.duration}`)
                 .setThumbnail(song.thumbnail);
         }
 
@@ -145,7 +149,8 @@ else {
                     return;
 
                 // optimal interval time based on song duration
-                const intervalTime = Math.ceil(songDurationInSeconds(song.duration) / 22) * 1000
+                //const intervalTime = Math.ceil(songDurationInSeconds(song.duration) / 22) * 1000
+                const intervalTime = 1000;
 
                 lastIntervalId = setInterval(() => {
 
@@ -195,20 +200,8 @@ else {
         console.log(e);
     });
 
-    function songDurationInSeconds(duration) {
-
-        const numbers = duration.split(':').map(Number)
-
-        let result = 0;
-        let j = 0;
-
-        for (let i = numbers.length - 1; i >= 0; i--) {
-            if (!isNaN(numbers[i])){
-                result += numbers[i] * Math.pow(60, j)
-                j++;
-            }
-        }
-        return result;
-    }
+    client.player.on('connectionError', (e) => {
+        console.error(e);
+    });
 }
 
